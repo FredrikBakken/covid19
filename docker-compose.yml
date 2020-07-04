@@ -1,0 +1,15 @@
+ 
+version: '3'
+services:
+  datascience-notebook:
+    container_name: covid19-analytics
+    image: jupyter/datascience-notebook
+    environment:
+      - JUPYTER_TOKEN=covid19
+    volumes:
+      - "./notebooks:/home/jovyan/notebooks"
+    ports:
+      - 8888:8888
+    #networks:
+    #  covid19_network:
+    #    ipv4_address: 172.20.1.1
