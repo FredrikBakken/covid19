@@ -1,5 +1,5 @@
 name: covid19
-description: A new Flutter project.
+description: Covid-19 incidents per. 100k citizen over the previous two week average.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.

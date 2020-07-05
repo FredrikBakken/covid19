@@ -133,7 +133,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       body: Column(
         children: [
-          SizedBox(height: 24.0),
+          SizedBox(height: 16.0),
           Center(
             child: DropdownButton(
               hint: Text('Select country...'),
@@ -155,14 +155,14 @@ class _HomeViewState extends State<HomeView> {
               value: _selectedCountry,
             ),
           ),
-          SizedBox(height: 25.0),
+          SizedBox(height: 20.0),
           _searching ? CircularProgressIndicator() : SizedBox(),
-          SizedBox(height: 25.0),
+          SizedBox(height: 20.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 200,
+                width: 190,
                 height: 120,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -170,7 +170,7 @@ class _HomeViewState extends State<HomeView> {
                     Text(
                       "POPULATION",
                       style: TextStyle(
-                        fontSize: 24.0,
+                        fontSize: 16.0,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -191,7 +191,7 @@ class _HomeViewState extends State<HomeView> {
               ),
               SizedBox(width: 18.0),
               Container(
-                width: 200,
+                width: 190,
                 height: 120,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -199,7 +199,7 @@ class _HomeViewState extends State<HomeView> {
                     Text(
                       "NEW CASES",
                       style: TextStyle(
-                        fontSize: 24.0,
+                        fontSize: 16.0,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -220,9 +220,9 @@ class _HomeViewState extends State<HomeView> {
               ),
             ],
           ),
-          SizedBox(height: 50.0),
+          SizedBox(height: 24.0),
           Container(
-            width: 436,
+            width: 396,
             height: 120,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -230,7 +230,7 @@ class _HomeViewState extends State<HomeView> {
                 Text(
                   "WEEKLY INCIDENTS PER. 100K",
                   style: TextStyle(
-                    fontSize: 24.0,
+                    fontSize: 20.0,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -249,12 +249,43 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 borderRadius: BorderRadius.all(Radius.circular(20))),
           ),
-          SizedBox(height: 25.0),
-          Text("Created by Fredrik Bakken."),
+          SizedBox(height: 32.0),
+          Text(
+            "DISCLAIMER",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           SizedBox(height: 8.0),
-          LinkText(
-              text:
-                  "Source code for the website can be found here: https://github.com/FredrikBakken/covid19/tree/master/web"),
+          Center(
+            child: Text(
+              "This website is only intended to provide information.",
+            ),
+          ),
+          SizedBox(height: 8.0),
+          Center(
+            child: Text(
+              "Please check the official statements before taking any actions.",
+            ),
+          ),
+          SizedBox(height: 24.0),
+          Center(
+            child: Text(
+              "Created by Fredrik Bakken.",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          SizedBox(height: 8.0),
+          Center(
+            child: Text("Source code for the website can be found here:"),
+          ),
+          Center(
+            child: LinkText(
+                text:
+                    "https://github.com/FredrikBakken/covid19/tree/master/web"),
+          ),
         ],
       ),
     );
