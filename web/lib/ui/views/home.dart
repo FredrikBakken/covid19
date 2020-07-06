@@ -17,8 +17,8 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  String _selectedProvince;
   Map<String, int> _newCases = Map<String, int>();
-  Map<String, int> _provinces = Map<String, int>();
   Map<String, int> _populations = Map<String, int>();
   Map<String, double> _per100k = Map<String, double>();
   bool _searching = false;
@@ -29,8 +29,7 @@ class _HomeViewState extends State<HomeView> {
   List<CaseModel> _casesModelList = List<CaseModel>();
   List<PopulationModel> _populationModelList = List<PopulationModel>();
 
-  List<String> _blacklisted = ["", ""];
-  List<String> _provinceSlugs = ["denmark"];
+  List<String> _provinceSlugs = ["denmark"]; // , "france"];
 
   Future getCountriesData() async {
     final String countriesUrl = "https://api.covid19api.com/countries";
@@ -61,6 +60,8 @@ class _HomeViewState extends State<HomeView> {
         .get(Uri.encodeFull(casesUrl), headers: {"Accept": "application/json"});
     var responseBody = json.decode(response.body);
 
+    Set<dynamic> provinces;
+
     setState(() {
       _casesModelList = List<CaseModel>();
       for (var responseObject in responseBody) {
@@ -68,15 +69,17 @@ class _HomeViewState extends State<HomeView> {
       }
 
       _casesModelList.sort((a, b) => a.cases.compareTo(b.cases));
+
+      provinces = _casesModelList.map((incident) => incident.province).toSet();
+
       _newCases[_selectedCountry.country] =
           _casesModelList.last.cases - _casesModelList.first.cases;
     });
 
     if (_provinceSlugs.contains(slug)) {
-      Set<dynamic> provinces =
-          _casesModelList.map((incident) => incident.province).toSet();
+      _newCases = Map<String, int>();
 
-      for (dynamic province in provinces) {
+      for (String province in provinces) {
         List<CaseModel> provinceCases = _casesModelList
             .where((incident) => incident.province == province)
             .toList();
@@ -84,46 +87,78 @@ class _HomeViewState extends State<HomeView> {
             provinceCases.last.cases - provinceCases.first.cases;
 
         setState(() {
-          _provinces = Map<String, int>();
-          _provinces[province == '' ? _selectedCountry.country : province] =
-              newProvinceCases;
+          _newCases[province.trim() == ''
+              ? _selectedCountry.country
+              : province] = newProvinceCases;
         });
       }
     }
   }
 
   Future getPopulation(String slug, String iso2) async {
-    final String populationUrl =
-        "https://api.worldbank.org/v2/country/$iso2/indicator/SP.POP.TOTL";
-    var response = await http
-        .get(Uri.encodeFull(populationUrl), headers: {"Accept": "text/xml"});
-    String xmlResponse = response.body.substring(response.body.indexOf("<"));
+    if (_provinceSlugs.contains(slug)) {
+      for (String province in _newCases.keys) {
+        CountryModel provinceCountry = _countriesModelList
+            .where((country) => country.country == province)
+            .first;
 
-    var document = XmlDocument.parse(xmlResponse);
-    XmlElement feedElement = document.findAllElements("wb:data").first;
-    List feedElements = feedElement.findAllElements("wb:data").toList();
+        final String populationUrl =
+            "https://api.worldbank.org/v2/country/${provinceCountry.iso2}/indicator/SP.POP.TOTL";
+        var response = await http.get(Uri.encodeFull(populationUrl),
+            headers: {"Accept": "text/xml"});
+        String xmlResponse =
+            response.body.substring(response.body.indexOf("<"));
 
-    setState(() {
-      _populationModelList = List<PopulationModel>();
-      for (var element in feedElements) {
-        _populationModelList.add(PopulationModel.parse(element));
+        var document = XmlDocument.parse(xmlResponse);
+        XmlElement feedElement = document.findAllElements("wb:data").first;
+        List feedElements = feedElement.findAllElements("wb:data").toList();
+
+        setState(() {
+          _populationModelList = List<PopulationModel>();
+          for (var element in feedElements) {
+            _populationModelList.add(PopulationModel.parse(element));
+          }
+
+          _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+          _populations[province] = _populationModelList.last.value;
+          _selectedProvince = _selectedCountry.country;
+        });
+
+        getPer100k(province);
       }
+    } else {
+      final String populationUrl =
+          "https://api.worldbank.org/v2/country/$iso2/indicator/SP.POP.TOTL";
+      var response = await http
+          .get(Uri.encodeFull(populationUrl), headers: {"Accept": "text/xml"});
+      String xmlResponse = response.body.substring(response.body.indexOf("<"));
 
-      _populationModelList.sort((a, b) => a.date.compareTo(b.date));
-      _populations[_selectedCountry.country] = _populationModelList.last.value;
-    });
+      var document = XmlDocument.parse(xmlResponse);
+      XmlElement feedElement = document.findAllElements("wb:data").first;
+      List feedElements = feedElement.findAllElements("wb:data").toList();
 
-    getPer100k();
+      setState(() {
+        _populationModelList = List<PopulationModel>();
+        for (var element in feedElements) {
+          _populationModelList.add(PopulationModel.parse(element));
+        }
+
+        _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+        _populations[_selectedCountry.country] =
+            _populationModelList.last.value;
+        _selectedProvince = _selectedCountry.country;
+      });
+
+      getPer100k(_selectedProvince);
+    }
   }
 
-  void getPer100k() {
+  void getPer100k(String province) {
     setState(() {
-      _per100k[_selectedCountry.country] =
-          ((_newCases[_selectedCountry.country] / 2) /
-                  _populations[_selectedCountry.country]) *
-              100000;
+      _per100k[province] =
+          ((_newCases[province] / 2) / _populations[province]) * 100000;
 
-      if (_per100k[_selectedCountry.country] >= 20.0) {
+      if (_per100k[province] >= 20.0) {
         _limitColor = Colors.red;
       } else {
         _limitColor = Colors.green;
@@ -158,6 +193,7 @@ class _HomeViewState extends State<HomeView> {
               onChanged: (CountryModel selectedCountry) async {
                 setState(() {
                   _searching = true;
+                  _newCases = Map<String, int>();
                   _selectedCountry = selectedCountry;
                 });
                 await this.getNewCases(_selectedCountry.slug);
@@ -166,6 +202,28 @@ class _HomeViewState extends State<HomeView> {
               },
             ),
           ),
+          _newCases.isNotEmpty && _newCases.keys.length > 1
+              ? Column(
+                  children: [
+                    SizedBox(height: 15.0),
+                    Container(
+                      width: 396,
+                      child: DropdownSearch<String>(
+                        label: 'Province',
+                        showSearchBox: true,
+                        selectedItem: _selectedProvince,
+                        onFind: (String filter) async =>
+                            _newCases.keys.toList()..sort(),
+                        onChanged: (String selectedProvince) async {
+                          setState(() {
+                            _selectedProvince = selectedProvince;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                )
+              : SizedBox(),
           SizedBox(height: 15.0),
           _searching ? CircularProgressIndicator() : SizedBox(),
           SizedBox(height: 15.0),
@@ -188,7 +246,7 @@ class _HomeViewState extends State<HomeView> {
                     SizedBox(height: 24.0),
                     Text(
                       _populations.isNotEmpty
-                          ? "${_populations[_selectedCountry.country]}"
+                          ? "${_populations[_selectedProvince]}"
                           : "",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -219,7 +277,7 @@ class _HomeViewState extends State<HomeView> {
                     SizedBox(height: 24.0),
                     Text(
                       _newCases.isNotEmpty
-                          ? "${_newCases[_selectedCountry.country]}"
+                          ? "${_newCases[_selectedProvince]}"
                           : "",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -251,9 +309,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 SizedBox(height: 24.0),
                 Text(
-                  _per100k.isNotEmpty
-                      ? "${_per100k[_selectedCountry.country]}"
-                      : "",
+                  _per100k.isNotEmpty ? "${_per100k[_selectedProvince]}" : "",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
