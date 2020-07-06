@@ -17,18 +17,20 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  int _newCases;
-  int _population;
-  double _per100k;
+  Map<String, int> _newCases = Map<String, int>();
+  Map<String, int> _provinces = Map<String, int>();
+  Map<String, int> _populations = Map<String, int>();
+  Map<String, double> _per100k = Map<String, double>();
   bool _searching = false;
   Color _limitColor = Colors.grey;
 
   CountryModel _selectedCountry;
-  List countries = List<CountryModel>();
-  List cases = List<CaseModel>();
-  List populations = List<PopulationModel>();
+  List<CountryModel> _countriesModelList = List<CountryModel>();
+  List<CaseModel> _casesModelList = List<CaseModel>();
+  List<PopulationModel> _populationModelList = List<PopulationModel>();
 
-  List blacklisted = ["", ""];
+  List<String> _blacklisted = ["", ""];
+  List<String> _provinceSlugs = ["denmark"];
 
   Future getCountriesData() async {
     final String countriesUrl = "https://api.covid19api.com/countries";
@@ -38,13 +40,13 @@ class _HomeViewState extends State<HomeView> {
 
     setState(() {
       for (var responseObject in responseBody) {
-        countries.add(CountryModel.fromJson(responseObject));
+        _countriesModelList.add(CountryModel.fromJson(responseObject));
       }
-      countries.sort((a, b) => a.country.compareTo(b.country));
+      _countriesModelList.sort((a, b) => a.country.compareTo(b.country));
     });
   }
 
-  Future getNewCases(String selectedSlug) async {
+  Future getNewCases(String slug) async {
     final DateTime now = DateTime.now();
     final DateTime dayZero = now.subtract(Duration(days: 15));
     final DateTime yesterday = now.subtract(Duration(days: 1));
@@ -54,37 +56,43 @@ class _HomeViewState extends State<HomeView> {
     final String toDate = formatter.format(yesterday) + "T00:00:00Z";
 
     final String casesUrl =
-        "https://api.covid19api.com/country/$selectedSlug/status/confirmed?from=$fromDate&to=$toDate";
+        "https://api.covid19api.com/country/$slug/status/confirmed?from=$fromDate&to=$toDate";
     var response = await http
         .get(Uri.encodeFull(casesUrl), headers: {"Accept": "application/json"});
     var responseBody = json.decode(response.body);
 
     setState(() {
-      cases = List<CaseModel>();
+      _casesModelList = List<CaseModel>();
       for (var responseObject in responseBody) {
-        cases.add(CaseModel.fromJson(responseObject));
+        _casesModelList.add(CaseModel.fromJson(responseObject));
       }
 
-      cases.sort((a, b) => a.cases.compareTo(b.cases));
-      _newCases = cases.last.cases - cases.first.cases;
+      _casesModelList.sort((a, b) => a.cases.compareTo(b.cases));
+      _newCases[_selectedCountry.country] =
+          _casesModelList.last.cases - _casesModelList.first.cases;
     });
 
-    /*
-    province_cases = {}
-    provinces = cases.Province.unique().tolist()
-    
-    for province in provinces:
-        selected_province = cases.loc[cases.Province == province]
-        new_cases = new_cases = selected_province.Cases.max() - selected_province.Cases.min()
-        province_cases[province] = new_cases
-    
-    fourteen_days_ago = day_0 + timedelta(days=1)
-    
-    return fourteen_days_ago, yesterday, province_cases
-    */
+    if (_provinceSlugs.contains(slug)) {
+      Set<dynamic> provinces =
+          _casesModelList.map((incident) => incident.province).toSet();
+
+      for (dynamic province in provinces) {
+        List<CaseModel> provinceCases = _casesModelList
+            .where((incident) => incident.province == province)
+            .toList();
+        int newProvinceCases =
+            provinceCases.last.cases - provinceCases.first.cases;
+
+        setState(() {
+          _provinces = Map<String, int>();
+          _provinces[province == '' ? _selectedCountry.country : province] =
+              newProvinceCases;
+        });
+      }
+    }
   }
 
-  Future getPopulation(String iso2) async {
+  Future getPopulation(String slug, String iso2) async {
     final String populationUrl =
         "https://api.worldbank.org/v2/country/$iso2/indicator/SP.POP.TOTL";
     var response = await http
@@ -96,21 +104,26 @@ class _HomeViewState extends State<HomeView> {
     List feedElements = feedElement.findAllElements("wb:data").toList();
 
     setState(() {
-      populations = List<PopulationModel>();
+      _populationModelList = List<PopulationModel>();
       for (var element in feedElements) {
-        populations.add(PopulationModel.parse(element));
+        _populationModelList.add(PopulationModel.parse(element));
       }
 
-      populations.sort((a, b) => a.date.compareTo(b.date));
-      _population = populations.last.value;
+      _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+      _populations[_selectedCountry.country] = _populationModelList.last.value;
     });
 
-    setState(() {
-      print("New cases: $_newCases");
-      print("Population: $_population");
-      _per100k = ((_newCases / 2) / _population) * 100000;
+    getPer100k();
+  }
 
-      if (_per100k >= 20.0) {
+  void getPer100k() {
+    setState(() {
+      _per100k[_selectedCountry.country] =
+          ((_newCases[_selectedCountry.country] / 2) /
+                  _populations[_selectedCountry.country]) *
+              100000;
+
+      if (_per100k[_selectedCountry.country] >= 20.0) {
         _limitColor = Colors.red;
       } else {
         _limitColor = Colors.green;
@@ -141,14 +154,15 @@ class _HomeViewState extends State<HomeView> {
               hint: 'Select country...',
               showSearchBox: true,
               selectedItem: _selectedCountry,
-              onFind: (String filter) async => countries,
+              onFind: (String filter) async => _countriesModelList,
               onChanged: (CountryModel selectedCountry) async {
                 setState(() {
                   _searching = true;
                   _selectedCountry = selectedCountry;
                 });
                 await this.getNewCases(_selectedCountry.slug);
-                this.getPopulation(_selectedCountry.iso2);
+                this.getPopulation(
+                    _selectedCountry.slug, _selectedCountry.iso2);
               },
             ),
           ),
@@ -173,7 +187,9 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     SizedBox(height: 24.0),
                     Text(
-                      _population != null ? "$_population" : "",
+                      _populations.isNotEmpty
+                          ? "${_populations[_selectedCountry.country]}"
+                          : "",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
@@ -202,7 +218,9 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     SizedBox(height: 24.0),
                     Text(
-                      _newCases != null ? "$_newCases" : "",
+                      _newCases.isNotEmpty
+                          ? "${_newCases[_selectedCountry.country]}"
+                          : "",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
@@ -233,7 +251,9 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 SizedBox(height: 24.0),
                 Text(
-                  _per100k != null ? "$_per100k" : "",
+                  _per100k.isNotEmpty
+                      ? "${_per100k[_selectedCountry.country]}"
+                      : "",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
