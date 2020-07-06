@@ -78,25 +78,38 @@ class _HomeViewState extends State<HomeView> {
 
   Future getPopulation(String slug, String iso2) async {
     if (_provinceSlugs.contains(slug)) {
+      List<String> toRemove = [];
+
       for (String province in _newCases.keys) {
-        CountryModel provinceCountry = _countriesModelList
-            .where((country) => country.country == province)
-            .first;
+        try {
+          CountryModel provinceCountry = _countriesModelList
+              .where((country) => country.country == province)
+              .first;
 
-        List feedElements = await queryAPI.getPopulation(provinceCountry.iso2);
+          List feedElements =
+              await queryAPI.getPopulation(provinceCountry.iso2);
 
+          setState(() {
+            _populationModelList = List<PopulationModel>();
+            for (var element in feedElements)
+              _populationModelList.add(PopulationModel.parse(element));
+            _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+
+            _populations[province] = _populationModelList.last.value;
+
+            _selectedProvince = _selectedCountry.country;
+          });
+
+          getPer100k(province);
+        } catch (e) {
+          toRemove.add(province);
+        }
+      }
+
+      for (String provinceToRemove in toRemove) {
         setState(() {
-          _populationModelList = List<PopulationModel>();
-          for (var element in feedElements)
-            _populationModelList.add(PopulationModel.parse(element));
-          _populationModelList.sort((a, b) => a.date.compareTo(b.date));
-
-          _populations[province] = _populationModelList.last.value;
-
-          _selectedProvince = _selectedCountry.country;
+          _newCases.remove(provinceToRemove);
         });
-
-        getPer100k(province);
       }
     } else {
       List feedElements = await queryAPI.getPopulation(iso2);
