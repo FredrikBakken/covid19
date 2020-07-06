@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:covid19/models/case_model.dart';
 import 'package:covid19/models/country_model.dart';
 import 'package:covid19/models/population_model.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -134,30 +135,26 @@ class _HomeViewState extends State<HomeView> {
       body: Column(
         children: [
           SizedBox(height: 16.0),
-          Center(
-            child: DropdownButton(
-              hint: Text('Select country...'),
-              items: countries.map((item) {
-                return DropdownMenuItem(
-                  child: Text(item.country),
-                  value: item,
-                );
-              }).toList(),
-              onChanged: (newSelection) async {
+          Container(
+            width: 396,
+            child: DropdownSearch<CountryModel>(
+              hint: 'Select country...',
+              showSearchBox: true,
+              selectedItem: _selectedCountry,
+              onFind: (String filter) async => countries,
+              onChanged: (CountryModel selectedCountry) async {
                 setState(() {
                   _searching = true;
-                  _selectedCountry = newSelection;
+                  _selectedCountry = selectedCountry;
                 });
-
                 await this.getNewCases(_selectedCountry.slug);
                 this.getPopulation(_selectedCountry.iso2);
               },
-              value: _selectedCountry,
             ),
           ),
-          SizedBox(height: 20.0),
+          SizedBox(height: 15.0),
           _searching ? CircularProgressIndicator() : SizedBox(),
-          SizedBox(height: 20.0),
+          SizedBox(height: 15.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
