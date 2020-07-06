@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'package:covid19/models/case_model.dart';
 import 'package:covid19/models/country_model.dart';
 import 'package:covid19/models/population_model.dart';
+import 'package:covid19/services/query_api.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:link_text/link_text.dart';
-import 'package:xml/xml.dart';
 
 class HomeView extends StatefulWidget {
   HomeView();
@@ -17,6 +14,8 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  QueryAPI queryAPI = new QueryAPI();
+
   String _selectedProvince;
   Map<String, int> _newCases = Map<String, int>();
   Map<String, int> _populations = Map<String, int>();
@@ -32,10 +31,7 @@ class _HomeViewState extends State<HomeView> {
   List<String> _provinceSlugs = ["denmark"]; // , "france"];
 
   Future getCountriesData() async {
-    final String countriesUrl = "https://api.covid19api.com/countries";
-    var response = await http.get(Uri.encodeFull(countriesUrl),
-        headers: {"Accept": "application/json"});
-    var responseBody = json.decode(response.body);
+    var responseBody = await queryAPI.getCountries();
 
     setState(() {
       for (var responseObject in responseBody) {
@@ -46,20 +42,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future getNewCases(String slug) async {
-    final DateTime now = DateTime.now();
-    final DateTime dayZero = now.subtract(Duration(days: 15));
-    final DateTime yesterday = now.subtract(Duration(days: 1));
-
-    final DateFormat formatter = new DateFormat('yyyy-MM-dd');
-    final String fromDate = formatter.format(dayZero) + "T00:00:00Z";
-    final String toDate = formatter.format(yesterday) + "T00:00:00Z";
-
-    final String casesUrl =
-        "https://api.covid19api.com/country/$slug/status/confirmed?from=$fromDate&to=$toDate";
-    var response = await http
-        .get(Uri.encodeFull(casesUrl), headers: {"Accept": "application/json"});
-    var responseBody = json.decode(response.body);
-
+    var responseBody = await queryAPI.getCases(slug);
     Set<dynamic> provinces;
 
     setState(() {
@@ -102,16 +85,7 @@ class _HomeViewState extends State<HomeView> {
             .where((country) => country.country == province)
             .first;
 
-        final String populationUrl =
-            "https://api.worldbank.org/v2/country/${provinceCountry.iso2}/indicator/SP.POP.TOTL";
-        var response = await http.get(Uri.encodeFull(populationUrl),
-            headers: {"Accept": "text/xml"});
-        String xmlResponse =
-            response.body.substring(response.body.indexOf("<"));
-
-        var document = XmlDocument.parse(xmlResponse);
-        XmlElement feedElement = document.findAllElements("wb:data").first;
-        List feedElements = feedElement.findAllElements("wb:data").toList();
+        List feedElements = await queryAPI.getPopulation(provinceCountry.iso2);
 
         setState(() {
           _populationModelList = List<PopulationModel>();
@@ -127,15 +101,7 @@ class _HomeViewState extends State<HomeView> {
         getPer100k(province);
       }
     } else {
-      final String populationUrl =
-          "https://api.worldbank.org/v2/country/$iso2/indicator/SP.POP.TOTL";
-      var response = await http
-          .get(Uri.encodeFull(populationUrl), headers: {"Accept": "text/xml"});
-      String xmlResponse = response.body.substring(response.body.indexOf("<"));
-
-      var document = XmlDocument.parse(xmlResponse);
-      XmlElement feedElement = document.findAllElements("wb:data").first;
-      List feedElements = feedElement.findAllElements("wb:data").toList();
+      List feedElements = await queryAPI.getPopulation(iso2);
 
       setState(() {
         _populationModelList = List<PopulationModel>();
@@ -232,7 +198,7 @@ class _HomeViewState extends State<HomeView> {
             children: [
               Container(
                 width: 190,
-                height: 120,
+                height: 100,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -263,7 +229,7 @@ class _HomeViewState extends State<HomeView> {
               SizedBox(width: 18.0),
               Container(
                 width: 190,
-                height: 120,
+                height: 100,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
