@@ -28,7 +28,7 @@ class _HomeViewState extends State<HomeView> {
   List<CaseModel> _casesModelList = List<CaseModel>();
   List<PopulationModel> _populationModelList = List<PopulationModel>();
 
-  List<String> _provinceSlugs = ["denmark"]; // , "france"];
+  List<String> _provinceSlugs = ["denmark", "france"];
 
   Future getCountriesData() async {
     var responseBody = await queryAPI.getCountries();
@@ -47,10 +47,8 @@ class _HomeViewState extends State<HomeView> {
 
     setState(() {
       _casesModelList = List<CaseModel>();
-      for (var responseObject in responseBody) {
+      for (dynamic responseObject in responseBody)
         _casesModelList.add(CaseModel.fromJson(responseObject));
-      }
-
       _casesModelList.sort((a, b) => a.cases.compareTo(b.cases));
 
       provinces = _casesModelList.map((incident) => incident.province).toSet();
@@ -89,12 +87,12 @@ class _HomeViewState extends State<HomeView> {
 
         setState(() {
           _populationModelList = List<PopulationModel>();
-          for (var element in feedElements) {
+          for (var element in feedElements)
             _populationModelList.add(PopulationModel.parse(element));
-          }
-
           _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+
           _populations[province] = _populationModelList.last.value;
+
           _selectedProvince = _selectedCountry.country;
         });
 
@@ -105,13 +103,13 @@ class _HomeViewState extends State<HomeView> {
 
       setState(() {
         _populationModelList = List<PopulationModel>();
-        for (var element in feedElements) {
+        for (var element in feedElements)
           _populationModelList.add(PopulationModel.parse(element));
-        }
-
         _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+
         _populations[_selectedCountry.country] =
             _populationModelList.last.value;
+
         _selectedProvince = _selectedCountry.country;
       });
 
