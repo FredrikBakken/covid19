@@ -17,11 +17,12 @@ class _HomeViewState extends State<HomeView> {
   QueryAPI queryAPI = new QueryAPI();
 
   String _selectedProvince;
+  bool _searching = false;
+
   Map<String, int> _newCases = Map<String, int>();
   Map<String, int> _populations = Map<String, int>();
   Map<String, double> _per100k = Map<String, double>();
-  bool _searching = false;
-  Color _limitColor = Colors.grey;
+  Map<String, Color> _limitColor = Map<String, Color>();
 
   CountryModel _selectedCountry;
   List<CountryModel> _countriesModelList = List<CountryModel>();
@@ -101,6 +102,10 @@ class _HomeViewState extends State<HomeView> {
         _newCases.remove(provinceToRemove);
       });
     }
+
+    setState(() {
+      _searching = false;
+    });
   }
 
   void getPer100k(String province) {
@@ -109,12 +114,10 @@ class _HomeViewState extends State<HomeView> {
           ((_newCases[province] / 2) / _populations[province]) * 100000;
 
       if (_per100k[province] >= 20.0) {
-        _limitColor = Colors.red;
+        _limitColor[province] = Colors.red;
       } else {
-        _limitColor = Colors.green;
+        _limitColor[province] = Colors.green;
       }
-
-      _searching = false;
     });
   }
 
@@ -144,6 +147,9 @@ class _HomeViewState extends State<HomeView> {
                 setState(() {
                   _searching = true;
                   _newCases = Map<String, int>();
+                  _populations = Map<String, int>();
+                  _per100k = Map<String, double>();
+                  _limitColor = Map<String, Color>();
                   _selectedCountry = selectedCountry;
                 });
                 await this.getNewCases(_selectedCountry.slug);
@@ -206,7 +212,9 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 decoration: BoxDecoration(
                     border: Border.all(
-                      color: _limitColor,
+                      color: _limitColor.isNotEmpty
+                          ? _limitColor[_selectedProvince]
+                          : Colors.grey,
                     ),
                     borderRadius: BorderRadius.all(Radius.circular(20))),
               ),
@@ -237,7 +245,9 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 decoration: BoxDecoration(
                     border: Border.all(
-                      color: _limitColor,
+                      color: _limitColor.isNotEmpty
+                          ? _limitColor[_selectedProvince]
+                          : Colors.grey,
                     ),
                     borderRadius: BorderRadius.all(Radius.circular(20))),
               ),
@@ -268,7 +278,9 @@ class _HomeViewState extends State<HomeView> {
             ),
             decoration: BoxDecoration(
                 border: Border.all(
-                  color: _limitColor,
+                  color: _limitColor.isNotEmpty
+                      ? _limitColor[_selectedProvince]
+                      : Colors.grey,
                 ),
                 borderRadius: BorderRadius.all(Radius.circular(20))),
           ),
