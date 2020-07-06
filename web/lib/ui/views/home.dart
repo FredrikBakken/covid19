@@ -28,8 +28,6 @@ class _HomeViewState extends State<HomeView> {
   List<CaseModel> _casesModelList = List<CaseModel>();
   List<PopulationModel> _populationModelList = List<PopulationModel>();
 
-  List<String> _provinceSlugs = ["denmark", "france"];
-
   Future getCountriesData() async {
     var responseBody = await queryAPI.getCountries();
 
@@ -46,87 +44,62 @@ class _HomeViewState extends State<HomeView> {
     Set<dynamic> provinces;
 
     setState(() {
+      _newCases = Map<String, int>();
       _casesModelList = List<CaseModel>();
+
       for (dynamic responseObject in responseBody)
         _casesModelList.add(CaseModel.fromJson(responseObject));
       _casesModelList.sort((a, b) => a.cases.compareTo(b.cases));
-
-      provinces = _casesModelList.map((incident) => incident.province).toSet();
-
-      _newCases[_selectedCountry.country] =
-          _casesModelList.last.cases - _casesModelList.first.cases;
     });
 
-    if (_provinceSlugs.contains(slug)) {
-      _newCases = Map<String, int>();
+    provinces = _casesModelList.map((incident) => incident.province).toSet();
 
-      for (String province in provinces) {
-        List<CaseModel> provinceCases = _casesModelList
-            .where((incident) => incident.province == province)
-            .toList();
-        int newProvinceCases =
-            provinceCases.last.cases - provinceCases.first.cases;
+    for (String province in provinces) {
+      List<CaseModel> provinceCases = _casesModelList
+          .where((incident) => incident.province == province)
+          .toList();
+      int newProvinceCases =
+          provinceCases.last.cases - provinceCases.first.cases;
 
-        setState(() {
-          _newCases[province.trim() == ''
-              ? _selectedCountry.country
-              : province] = newProvinceCases;
-        });
-      }
+      setState(() {
+        _newCases[province.trim() == '' ? _selectedCountry.country : province] =
+            newProvinceCases;
+      });
     }
   }
 
   Future getPopulation(String slug, String iso2) async {
-    if (_provinceSlugs.contains(slug)) {
-      List<String> toRemove = [];
+    List<String> toRemove = [];
 
-      for (String province in _newCases.keys) {
-        try {
-          CountryModel provinceCountry = _countriesModelList
-              .where((country) => country.country == province)
-              .first;
+    for (String province in _newCases.keys) {
+      try {
+        CountryModel provinceCountry = _countriesModelList
+            .where((country) => country.country == province)
+            .first;
 
-          List feedElements =
-              await queryAPI.getPopulation(provinceCountry.iso2);
+        List feedElements = await queryAPI.getPopulation(provinceCountry.iso2);
 
-          setState(() {
-            _populationModelList = List<PopulationModel>();
-            for (var element in feedElements)
-              _populationModelList.add(PopulationModel.parse(element));
-            _populationModelList.sort((a, b) => a.date.compareTo(b.date));
-
-            _populations[province] = _populationModelList.last.value;
-
-            _selectedProvince = _selectedCountry.country;
-          });
-
-          getPer100k(province);
-        } catch (e) {
-          toRemove.add(province);
-        }
-      }
-
-      for (String provinceToRemove in toRemove) {
         setState(() {
-          _newCases.remove(provinceToRemove);
+          _populationModelList = List<PopulationModel>();
+          for (var element in feedElements)
+            _populationModelList.add(PopulationModel.parse(element));
+          _populationModelList.sort((a, b) => a.date.compareTo(b.date));
+
+          _populations[province] = _populationModelList.last.value;
+
+          _selectedProvince = _selectedCountry.country;
         });
+
+        getPer100k(province);
+      } catch (e) {
+        toRemove.add(province);
       }
-    } else {
-      List feedElements = await queryAPI.getPopulation(iso2);
+    }
 
+    for (String provinceToRemove in toRemove) {
       setState(() {
-        _populationModelList = List<PopulationModel>();
-        for (var element in feedElements)
-          _populationModelList.add(PopulationModel.parse(element));
-        _populationModelList.sort((a, b) => a.date.compareTo(b.date));
-
-        _populations[_selectedCountry.country] =
-            _populationModelList.last.value;
-
-        _selectedProvince = _selectedCountry.country;
+        _newCases.remove(provinceToRemove);
       });
-
-      getPer100k(_selectedProvince);
     }
   }
 
