@@ -2,11 +2,12 @@ import 'package:covid19/models/case_model.dart';
 import 'package:covid19/models/country_model.dart';
 import 'package:covid19/models/population_model.dart';
 import 'package:covid19/services/query_api.dart';
+import 'package:covid19/ui/widgets/created_by.dart';
+import 'package:covid19/ui/widgets/disclaimer.dart';
 import 'package:covid19/utils/country_filters.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:link_text/link_text.dart';
 
 class HomeView extends StatefulWidget {
   HomeView();
@@ -190,7 +191,7 @@ class _HomeViewState extends State<HomeView> {
               hint: 'Select country...',
               showSearchBox: true,
               selectedItem: _selectedCountry,
-              onFind: (String filter) async => _countriesModelListView,
+              onFind: (_) async => _countriesModelListView,
               onChanged: (CountryModel selectedCountry) async {
                 //print(selectedCountry.country); // Debug
                 setState(() {
@@ -217,8 +218,7 @@ class _HomeViewState extends State<HomeView> {
                         label: 'Province',
                         showSearchBox: true,
                         selectedItem: _selectedProvince,
-                        onFind: (String filter) async =>
-                            _newCases.keys.toList()..sort(),
+                        onFind: (_) async => _newCases.keys.toList()..sort(),
                         onChanged: (String selectedProvince) async {
                           setState(() {
                             _selectedProvince = selectedProvince;
@@ -353,42 +353,9 @@ class _HomeViewState extends State<HomeView> {
                 borderRadius: BorderRadius.all(Radius.circular(20))),
           ),
           SizedBox(height: 32.0),
-          Text(
-            "DISCLAIMER",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8.0),
-          Center(
-            child: Text(
-              "This website is only intended to provide information.",
-            ),
-          ),
-          SizedBox(height: 8.0),
-          Center(
-            child: Text(
-              "Please check the official statements before taking any actions.",
-            ),
-          ),
+          disclaimer(),
           SizedBox(height: 24.0),
-          Center(
-            child: Text(
-              "Created by Fredrik Bakken.",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(height: 8.0),
-          Center(
-            child: Text("Source code for the website can be found here:"),
-          ),
-          Center(
-            child: LinkText(
-                text:
-                    "https://github.com/FredrikBakken/covid19/tree/master/web"),
-          ),
+          createdBy(),
         ],
       ),
     );
