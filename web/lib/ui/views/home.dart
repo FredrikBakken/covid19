@@ -2,6 +2,7 @@ import 'package:covid19/models/case_model.dart';
 import 'package:covid19/models/country_model.dart';
 import 'package:covid19/models/population_model.dart';
 import 'package:covid19/services/query_api.dart';
+import 'package:covid19/utils/country_filters.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,7 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  CountryFilters countryFilters = new CountryFilters();
   QueryAPI queryAPI = new QueryAPI();
 
   String _selectedProvince;
@@ -27,19 +29,23 @@ class _HomeViewState extends State<HomeView> {
 
   CountryModel _selectedCountry;
   List<CountryModel> _countriesModelList = List<CountryModel>();
+  List<CountryModel> _countriesModelListView = List<CountryModel>();
   List<CaseModel> _casesModelList = List<CaseModel>();
   List<PopulationModel> _populationModelList = List<PopulationModel>();
-
-  List<String> _exceptionCountries = ["Australia"];
 
   Future getCountriesData() async {
     var responseBody = await queryAPI.getCountries();
 
     setState(() {
       for (var responseObject in responseBody) {
-        _countriesModelList.add(CountryModel.fromJson(responseObject));
+        CountryModel country = CountryModel.fromJson(responseObject);
+        _countriesModelList.add(country);
+
+        if (!countryFilters.filteredCountries.containsKey(country.country)) {
+          _countriesModelListView.add(country);
+        }
       }
-      _countriesModelList.sort((a, b) => a.country.compareTo(b.country));
+      _countriesModelListView.sort((a, b) => a.country.compareTo(b.country));
     });
   }
 
@@ -65,7 +71,8 @@ class _HomeViewState extends State<HomeView> {
       _casesModelList.sort((a, b) => a.cases.compareTo(b.cases));
     });
 
-    if (_exceptionCountries.contains(_selectedCountry.country)) {
+    if (countryFilters.exceptionCountries
+        .containsKey(_selectedCountry.country)) {
       int startCases = _casesModelList
           .where((incident) => incident.date == fromDate)
           .toList()
@@ -172,8 +179,9 @@ class _HomeViewState extends State<HomeView> {
               hint: 'Select country...',
               showSearchBox: true,
               selectedItem: _selectedCountry,
-              onFind: (String filter) async => _countriesModelList,
+              onFind: (String filter) async => _countriesModelListView,
               onChanged: (CountryModel selectedCountry) async {
+                print(selectedCountry.country);
                 setState(() {
                   _searching = true;
                   _newCases = Map<String, int>();
@@ -231,7 +239,7 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     SizedBox(height: 16.0),
                     Text(
-                      _populations.isNotEmpty
+                      _populations.isNotEmpty && _populations != null
                           ? "${_populations[_selectedProvince]}"
                           : "",
                       style: TextStyle(
@@ -264,7 +272,7 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     SizedBox(height: 16.0),
                     Text(
-                      _newCases.isNotEmpty
+                      _newCases.isNotEmpty && _newCases != null
                           ? "${_newCases[_selectedProvince]}"
                           : "",
                       style: TextStyle(
@@ -299,7 +307,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 SizedBox(height: 16.0),
                 Text(
-                  _per100k.isNotEmpty
+                  _per100k.isNotEmpty && _per100k != null
                       ? _per100k[_selectedProvince] == 0
                           ? "0"
                           : "${_per100k[_selectedProvince].toStringAsFixed(3)}"
@@ -311,7 +319,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 SizedBox(height: 12.0),
                 Text(
-                  _per100k.isNotEmpty
+                  _per100k.isNotEmpty && _per100k != null
                       ? _per100k[_selectedProvince] == 0
                           ? "new cases per. 100k citizen"
                           : "new cases per. 100k citizen"
