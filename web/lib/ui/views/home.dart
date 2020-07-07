@@ -59,7 +59,8 @@ class _HomeViewState extends State<HomeView> {
     final String toDate = formatter.format(yesterday) + "T00:00:00Z";
 
     var responseBody = await queryAPI.getCases(slug, fromDate, toDate);
-    print(responseBody);
+    //print(responseBody); // Debug
+
     Set<dynamic> provinces;
 
     setState(() {
@@ -97,6 +98,8 @@ class _HomeViewState extends State<HomeView> {
         int newProvinceCases =
             provinceCases.last.cases - provinceCases.first.cases;
 
+        //print(newProvinceCases); // Debug
+
         setState(() {
           _newCases[province.trim() == ''
               ? _selectedCountry.country
@@ -116,14 +119,22 @@ class _HomeViewState extends State<HomeView> {
             .first;
 
         List feedElements = await queryAPI.getPopulation(provinceCountry.iso2);
+        //print(feedElements); // Debug
 
         setState(() {
           _populationModelList = List<PopulationModel>();
-          for (var element in feedElements)
-            _populationModelList.add(PopulationModel.parse(element));
+          for (var element in feedElements) {
+            try {
+              _populationModelList.add(PopulationModel.parse(element));
+            } catch (e) {
+              continue;
+            }
+          }
           _populationModelList.sort((a, b) => a.date.compareTo(b.date));
-
           _populations[province] = _populationModelList.last.value;
+
+          //print(province); // Debug
+          //print(_populationModelList.last.value); // Debug
 
           _selectedProvince = _selectedCountry.country;
         });
@@ -181,7 +192,7 @@ class _HomeViewState extends State<HomeView> {
               selectedItem: _selectedCountry,
               onFind: (String filter) async => _countriesModelListView,
               onChanged: (CountryModel selectedCountry) async {
-                print(selectedCountry.country);
+                //print(selectedCountry.country); // Debug
                 setState(() {
                   _searching = true;
                   _newCases = Map<String, int>();

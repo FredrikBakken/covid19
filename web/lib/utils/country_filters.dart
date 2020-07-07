@@ -1,6 +1,4 @@
 class CountryFilters {
-  // TODO: Kazakhstan, Kuwait, Palestinian Territory, [Taiwan, Republic of China]
-
   Map<String, dynamic> filteredCountries = {
     "ALA Aland Islands": "",
     "American Samoa": "",
@@ -57,6 +55,7 @@ class CountryFilters {
     "Solomon Islands": "",
     "South Georgia and the South Sandwich Islands": "",
     "Svalbard and Jan Mayen Islands": "",
+    "Taiwan, Republic of China": "",
     "Tokelau": "",
     "Tonga": "",
     "Turkmenistan": "",
