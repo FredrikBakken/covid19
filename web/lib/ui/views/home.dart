@@ -229,7 +229,7 @@ class _HomeViewState extends State<HomeView> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 24.0),
+                    SizedBox(height: 16.0),
                     Text(
                       _populations.isNotEmpty
                           ? "${_populations[_selectedProvince]}"
@@ -262,7 +262,7 @@ class _HomeViewState extends State<HomeView> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 24.0),
+                    SizedBox(height: 16.0),
                     Text(
                       _newCases.isNotEmpty
                           ? "${_newCases[_selectedProvince]}"
@@ -291,15 +291,31 @@ class _HomeViewState extends State<HomeView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "WEEKLY INCIDENTS PER. 100K",
+                  "WEEKLY INCIDENTS",
                   style: TextStyle(
                     fontSize: 20.0,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 24.0),
+                SizedBox(height: 16.0),
                 Text(
-                  _per100k.isNotEmpty ? "${_per100k[_selectedProvince]}" : "",
+                  _per100k.isNotEmpty
+                      ? _per100k[_selectedProvince] == 0
+                          ? "0"
+                          : "${_per100k[_selectedProvince].toStringAsFixed(3)}"
+                      : "",
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 12.0),
+                Text(
+                  _per100k.isNotEmpty
+                      ? _per100k[_selectedProvince] == 0
+                          ? "new cases per. 100k citizen"
+                          : "new cases per. 100k citizen"
+                      : "",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
