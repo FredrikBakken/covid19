@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:xml/xml.dart';
 
 class QueryAPI {
@@ -12,15 +11,7 @@ class QueryAPI {
     return json.decode(response.body);
   }
 
-  Future<dynamic> getCases(String slug) async {
-    final DateTime now = DateTime.now();
-    final DateTime dayZero = now.subtract(Duration(days: 15));
-    final DateTime yesterday = now.subtract(Duration(days: 1));
-
-    final DateFormat formatter = new DateFormat('yyyy-MM-dd');
-    final String fromDate = formatter.format(dayZero) + "T00:00:00Z";
-    final String toDate = formatter.format(yesterday) + "T00:00:00Z";
-
+  Future<dynamic> getCases(String slug, String fromDate, String toDate) async {
     final String casesUrl =
         "https://api.covid19api.com/country/$slug/status/confirmed?from=$fromDate&to=$toDate";
     var response = await http

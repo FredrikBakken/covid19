@@ -4,6 +4,7 @@ import 'package:covid19/models/population_model.dart';
 import 'package:covid19/services/query_api.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:link_text/link_text.dart';
 
 class HomeView extends StatefulWidget {
@@ -29,6 +30,8 @@ class _HomeViewState extends State<HomeView> {
   List<CaseModel> _casesModelList = List<CaseModel>();
   List<PopulationModel> _populationModelList = List<PopulationModel>();
 
+  List<String> _exceptionCountries = ["Australia"];
+
   Future getCountriesData() async {
     var responseBody = await queryAPI.getCountries();
 
@@ -41,7 +44,16 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future getNewCases(String slug) async {
-    var responseBody = await queryAPI.getCases(slug);
+    final DateTime now = DateTime.now();
+    final DateTime dayZero = now.subtract(Duration(days: 15));
+    final DateTime yesterday = now.subtract(Duration(days: 1));
+
+    final DateFormat formatter = new DateFormat('yyyy-MM-dd');
+    final String fromDate = formatter.format(dayZero) + "T00:00:00Z";
+    final String toDate = formatter.format(yesterday) + "T00:00:00Z";
+
+    var responseBody = await queryAPI.getCases(slug, fromDate, toDate);
+    print(responseBody);
     Set<dynamic> provinces;
 
     setState(() {
@@ -53,19 +65,37 @@ class _HomeViewState extends State<HomeView> {
       _casesModelList.sort((a, b) => a.cases.compareTo(b.cases));
     });
 
-    provinces = _casesModelList.map((incident) => incident.province).toSet();
-
-    for (String province in provinces) {
-      List<CaseModel> provinceCases = _casesModelList
-          .where((incident) => incident.province == province)
-          .toList();
-      int newProvinceCases =
-          provinceCases.last.cases - provinceCases.first.cases;
+    if (_exceptionCountries.contains(_selectedCountry.country)) {
+      int startCases = _casesModelList
+          .where((incident) => incident.date == fromDate)
+          .toList()
+          .map((incident) => incident.cases)
+          .reduce((a, b) => a + b);
+      int stopCases = _casesModelList
+          .where((incident) => incident.date == toDate)
+          .toList()
+          .map((incident) => incident.cases)
+          .reduce((a, b) => a + b);
 
       setState(() {
-        _newCases[province.trim() == '' ? _selectedCountry.country : province] =
-            newProvinceCases;
+        _newCases[_selectedCountry.country] = stopCases - startCases;
       });
+    } else {
+      provinces = _casesModelList.map((incident) => incident.province).toSet();
+
+      for (String province in provinces) {
+        List<CaseModel> provinceCases = _casesModelList
+            .where((incident) => incident.province == province)
+            .toList();
+        int newProvinceCases =
+            provinceCases.last.cases - provinceCases.first.cases;
+
+        setState(() {
+          _newCases[province.trim() == ''
+              ? _selectedCountry.country
+              : province] = newProvinceCases;
+        });
+      }
     }
   }
 
