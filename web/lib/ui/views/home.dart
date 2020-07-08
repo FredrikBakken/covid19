@@ -261,8 +261,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 decoration: BoxDecoration(
                     border: Border.all(
-                      color: _limitColor.isNotEmpty &&
-                              _limitColor[_selectedProvince] != null
+                      color: _limitColor.isNotEmpty
                           ? _limitColor[_selectedProvince]
                           : Colors.grey,
                     ),
@@ -295,8 +294,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 decoration: BoxDecoration(
                     border: Border.all(
-                      color: _limitColor.isNotEmpty &&
-                              _limitColor[_selectedProvince] != null
+                      color: _limitColor.isNotEmpty
                           ? _limitColor[_selectedProvince]
                           : Colors.grey,
                     ),
@@ -320,7 +318,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 SizedBox(height: 16.0),
                 Text(
-                  _per100k.isNotEmpty && _per100k[_selectedProvince] != null
+                  _per100k.isNotEmpty && _per100k != null
                       ? _per100k[_selectedProvince] == 0
                           ? "0"
                           : "${_per100k[_selectedProvince].toStringAsFixed(3)}"
@@ -332,7 +330,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 SizedBox(height: 12.0),
                 Text(
-                  _per100k.isNotEmpty && _per100k[_selectedProvince] != null
+                  _per100k.isNotEmpty && _per100k != null
                       ? _per100k[_selectedProvince] == 0
                           ? "new cases per. 100k citizen"
                           : "new cases per. 100k citizen"
@@ -345,8 +343,7 @@ class _HomeViewState extends State<HomeView> {
             ),
             decoration: BoxDecoration(
                 border: Border.all(
-                  color: _limitColor.isNotEmpty &&
-                          _limitColor[_selectedProvince] != null
+                  color: _limitColor.isNotEmpty
                       ? _limitColor[_selectedProvince]
                       : Colors.grey,
                 ),
